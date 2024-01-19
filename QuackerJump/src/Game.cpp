@@ -116,7 +116,7 @@ bool Game::on_platform()
 
 void Game::move_platforms(int dy) {
 	int n_platforms_removed = 0;
-	for (int i = 0; i < platforms.size(); i=i+1-n_platforms_removed) {
+	for (int i = 0; i < platforms.size(); i++) {
 		platforms[i].y += dy;
 		if (platforms[i].type == PlatformType::MOVING) {
 			if (platforms[i].x + platforms[i].speed + Platform::width > SCREEN_WIDTH || platforms[i].x + platforms[i].speed < 0) {
@@ -126,10 +126,12 @@ void Game::move_platforms(int dy) {
 		}
 		if (platforms[i].y > SCREEN_HEIGHT) {  // platform is outside the screen -> erase
 			std::cout << platforms[i].y << std::endl;
-			platforms.erase(platforms.begin() + i);
-			n_platforms_removed += 1;
+			n_platforms_removed++;
 		}
 	}
+	platforms.erase(std::remove_if(platforms.begin(),
+		platforms.end(),
+		[](Platform platform) { return platform.y > SCREEN_HEIGHT; }), platforms.end());
 	create_random_platforms(n_platforms_removed, SCREEN_WIDTH - Platform::width, int(SCREEN_HEIGHT / 2));
 
 }
