@@ -1,24 +1,13 @@
 #include "Player.hpp"
 
-Player::Player() : x(0), y(0), jumping(false)
+Player::Player(int jumping_speed) : x(0), y(0), jumping(false), jumping_speed(jumping_speed)
 {
 }
 
-void Player::jump(int dy)
-{
-	y -= dy;
-	jumping = true;
-}
-
-void Player::fall(int dy)
-{
-	y += dy;
-	jumping = false;
-}
-
-void Player::move(int dx)
+void Player::move(int dx, int dy)
 {
 	x += dx;
+	y += dy;
 }
 
 void Player::set_buff(Buff new_buff)

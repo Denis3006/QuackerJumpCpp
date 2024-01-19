@@ -1,26 +1,26 @@
 #include "Game.hpp"
 #include <SFML/Window/Event.hpp>
 #include "SFML/Graphics/RectangleShape.hpp"
+#include <random>
+#include <iostream>
 
-Game::Game() : window(sf::VideoMode(1920, 1080), "Quacker Jump") 
+Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), player(5), jumping_speed(5)
 {
 	window.setFramerateLimit(60);
-	for (int i = 0; i < 5; i++) {
-		platforms.push_back(Platform((i + 1) * 200, i * 100));
-	}
+	create_random_platforms(5, SCREEN_WIDTH - Platform::width, SCREEN_HEIGHT - Platform::height);
 }
 
 void Game::draw_game()
 {
 	window.clear(sf::Color::Black);
 	// draw player
-	sf::RectangleShape player_model(sf::Vector2f(100, 100));
+	sf::RectangleShape player_model(sf::Vector2f(PLAYER_SIZE, PLAYER_SIZE));
 	player_model.setFillColor(sf::Color::Magenta);
 	player_model.setPosition(player.get_x(), player.get_y());
 	window.draw(player_model);
 	
 	// draw platforms
-	for (auto platform : platforms) {
+	for (const auto& platform : platforms) {
 		sf::RectangleShape plaftorm_model(sf::Vector2f(platform.width, platform.height));
 		switch (platform.type) {
 		case PlatformType::DEFAULT:
@@ -65,7 +65,7 @@ void Game::get_user_input()
 				moving_right = true;
 			}
 			if (event.key.code == sf::Keyboard::Space) {
-				jumping = true;
+				jump_frames_left = frames_per_jump;
 			}
 		}
 		if (event.type == sf::Event::KeyReleased) {
@@ -75,40 +75,68 @@ void Game::get_user_input()
 			if (event.key.code == sf::Keyboard::D || event.key.code == sf::Keyboard::Right) {
 				moving_right = false;
 			}
-			if (event.key.code == sf::Keyboard::Space) {
-				jumping = false;
-			}
 		}
-	}
-	bool moving_sideways = (moving_left != moving_right);
-	if (moving_sideways && jumping) {
-		if (moving_left) {
-			player.move(-10); 
-			player.jump(20);
-		}
-		else {
-			player.move(10);
-			player.jump(20);
-		}
-	}
-	else if (moving_sideways && !jumping) {
-		if (moving_left) {
-			player.move(-10);
- 			player.fall(gravity);
-		}
-		else {
-			player.move(10);
-			player.fall(gravity);
-		}
-	}
-	else if (jumping) {
-		player.jump(100);
-	}
-	else {
-		player.fall(gravity);
 	}
 }
 
 void Game::update_game_state()
 {
+	bool moving_sideways = (moving_left != moving_right);
+	int dx = 0;
+	int dy = 10;
+	if (moving_sideways) {
+		dx = moving_right ? 10 : -10;
+	}
+	if (jump_frames_left > 0) {
+		jump_frames_left--;
+		dy = -jumping_speed;
+		move_platforms(jumping_speed);
+		// TODO: spawn new platforms above the screen every time player jumps (min_y = -Y_LIMIT, max_y = Platform::height)
+	}
+	else if (!on_platform()) {
+		dy = gravity;
+	}
+	else {
+		jump_frames_left = frames_per_jump;
+	}
+	player.move(dx, dy);
+}
+
+bool Game::on_platform()
+{
+	for (const auto& platform : platforms) {
+		if (platform.x <= player.get_x() + PLAYER_SIZE && player.get_x() <= platform.x + platform.width && platform.y <= player.get_y() + PLAYER_SIZE && player.get_y() + PLAYER_SIZE <= platform.y + platform.height) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Game::move_platforms(int dy) {
+	int n_platforms_removed = 0;
+	for (int i = 0; i < platforms.size(); i=i+1-n_platforms_removed) {
+		platforms[i].y += dy;
+		if (platforms[i].y > SCREEN_HEIGHT) {  // platform is outside the screen -> erase
+			std::cout << platforms[i].y << std::endl;
+			platforms.erase(platforms.begin() + i);
+			n_platforms_removed += 1;
+		}
+	}
+	// for each removed platform create a new random one
+	//int player_y = player.get_y();
+	//int y_max = player_y > 0 ? player_y : SCREEN_HEIGHT
+	create_random_platforms(n_platforms_removed, SCREEN_WIDTH - Platform::width, int(SCREEN_HEIGHT / 2));
+
+}
+
+void Game::create_random_platforms(int n_platforms, int x_max, int y_max)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> x_distr(0, x_max);
+	std::uniform_int_distribution<> y_distr(0, y_max);
+
+	for (int i = 0; i < n_platforms; i++) {
+		platforms.push_back(Platform(x_distr(gen), y_distr(gen)));
+	}
 }

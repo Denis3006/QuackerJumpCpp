@@ -9,8 +9,8 @@ private:
 public:
 	PlatformType type;
 	int x, y;
-	const int width = 200;
-	const int height = 20;
+	static const int width = 200;
+	static const int height = 20;
 	Platform(int x, int y);
 	~Platform();
 };
