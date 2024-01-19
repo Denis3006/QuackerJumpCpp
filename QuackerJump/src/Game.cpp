@@ -4,7 +4,7 @@
 #include <random>
 #include <iostream>
 
-Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), player(5), jumping_speed(5)
+Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), jumping_speed(5)
 {
 	window.setFramerateLimit(60);
 	create_random_platforms(5, SCREEN_WIDTH - Platform::width, SCREEN_HEIGHT - Platform::height);
@@ -95,9 +95,11 @@ void Game::update_game_state()
 	}
 	else if (!on_platform()) {
 		dy = gravity;
+		move_platforms(0);
 	}
 	else {
 		jump_frames_left = frames_per_jump;
+		move_platforms(0);
 	}
 	player.move(dx, dy);
 }
@@ -116,15 +118,18 @@ void Game::move_platforms(int dy) {
 	int n_platforms_removed = 0;
 	for (int i = 0; i < platforms.size(); i=i+1-n_platforms_removed) {
 		platforms[i].y += dy;
+		if (platforms[i].type == PlatformType::MOVING) {
+			if (platforms[i].x + platforms[i].speed + Platform::width > SCREEN_WIDTH || platforms[i].x + platforms[i].speed < 0) {
+				platforms[i].speed *= -1;
+			}
+			platforms[i].x += platforms[i].speed;
+		}
 		if (platforms[i].y > SCREEN_HEIGHT) {  // platform is outside the screen -> erase
 			std::cout << platforms[i].y << std::endl;
 			platforms.erase(platforms.begin() + i);
 			n_platforms_removed += 1;
 		}
 	}
-	// for each removed platform create a new random one
-	//int player_y = player.get_y();
-	//int y_max = player_y > 0 ? player_y : SCREEN_HEIGHT
 	create_random_platforms(n_platforms_removed, SCREEN_WIDTH - Platform::width, int(SCREEN_HEIGHT / 2));
 
 }

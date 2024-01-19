@@ -1,7 +1,8 @@
 #include "Player.hpp"
 
-Player::Player(int jumping_speed) : x(0), y(0), jumping(false), jumping_speed(jumping_speed)
+Player::Player() : x(0), y(0)
 {
+
 }
 
 void Player::move(int dx, int dy)

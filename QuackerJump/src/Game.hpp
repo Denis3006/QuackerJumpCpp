@@ -26,6 +26,7 @@ private:
 	const int frames_per_jump = 50;
 	int jump_frames_left;
 	int jumping_speed;
+	int platform_speed = PLATFORM_SPEED;
 	Player player;
 	std::vector<Platform> platforms;
 	void move_platforms(int dy);
