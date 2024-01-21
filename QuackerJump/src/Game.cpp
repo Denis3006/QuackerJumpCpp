@@ -7,7 +7,7 @@
 Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), jumping_speed(5)
 {
 	window.setFramerateLimit(60);
-	create_random_platforms(5, SCREEN_WIDTH - Platform::width, SCREEN_HEIGHT - Platform::height);
+	create_random_platforms(5, 0, SCREEN_WIDTH - Platform::width, 0, SCREEN_HEIGHT - Platform::height);
 }
 
 void Game::draw_game()
@@ -91,7 +91,6 @@ void Game::update_game_state()
 		jump_frames_left--;
 		dy = -jumping_speed;
 		move_platforms(jumping_speed);
-		// TODO: spawn new platforms above the screen every time player jumps (min_y = -Y_LIMIT, max_y = Platform::height)
 	}
 	else if (!on_platform()) {
 		dy = gravity;
@@ -99,6 +98,7 @@ void Game::update_game_state()
 	}
 	else {
 		jump_frames_left = frames_per_jump;
+		create_random_platforms(2, 0, SCREEN_WIDTH - Platform::width, -frames_per_jump * jumping_speed, 0);
 		move_platforms(0);
 	}
 	player.move(dx, dy);
@@ -107,7 +107,10 @@ void Game::update_game_state()
 bool Game::on_platform()
 {
 	for (const auto& platform : platforms) {
-		if (platform.x <= player.get_x() + PLAYER_SIZE && player.get_x() <= platform.x + platform.width && platform.y <= player.get_y() + PLAYER_SIZE && player.get_y() + PLAYER_SIZE <= platform.y + platform.height) {
+		if (platform.x <= player.get_x() + PLAYER_SIZE && 
+			player.get_x() <= platform.x + platform.width && 
+			platform.y <= player.get_y() + PLAYER_SIZE && 
+			player.get_y() + PLAYER_SIZE <= platform.y + platform.height) {
 			return true;
 		}
 	}
@@ -132,18 +135,18 @@ void Game::move_platforms(int dy) {
 	platforms.erase(std::remove_if(platforms.begin(),
 		platforms.end(),
 		[](Platform platform) { return platform.y > SCREEN_HEIGHT; }), platforms.end());
-	create_random_platforms(n_platforms_removed, SCREEN_WIDTH - Platform::width, int(SCREEN_HEIGHT / 2));
 
 }
 
-void Game::create_random_platforms(int n_platforms, int x_max, int y_max)
+void Game::create_random_platforms(int n_platforms, int x_min, int x_max, int y_min, int y_max)
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> x_distr(0, x_max);
-	std::uniform_int_distribution<> y_distr(0, y_max);
+	std::uniform_int_distribution<> x_distr(x_min, x_max);
+	std::uniform_int_distribution<> y_distr(y_min, y_max);
 
-	for (int i = 0; i < n_platforms; i++) {
+	std::cout << "Creating random platforms: " << x_min << ", " << x_max << "; " << y_min << ", " << y_max << std::endl;
+	for (int i = 0; i < n_platforms; i++) {		
 		platforms.push_back(Platform(x_distr(gen), y_distr(gen)));
 	}
 }

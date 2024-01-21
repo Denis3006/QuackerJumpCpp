@@ -30,7 +30,7 @@ private:
 	Player player;
 	std::vector<Platform> platforms;
 	void move_platforms(int dy);
-	void create_random_platforms(int n_platforms, int x_max, int y_max);
+	void create_random_platforms(int n_platforms, int x_min, int x_max, int y_min, int y_max);
 	bool on_platform();
 	const int gravity = 2;
 };

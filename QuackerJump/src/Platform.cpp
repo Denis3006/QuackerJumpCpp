@@ -1,5 +1,6 @@
 #include "Platform.hpp"
 #include <map>
+#include <iostream>
 #include <random>
 
 PlatformType Platform::random_type()
@@ -34,6 +35,7 @@ Platform::Platform(int x, int y) : x(x), y(y), type(random_type())
     if (type == PlatformType::MOVING) {
         speed = PLATFORM_SPEED;
     }
+    std::cout << "Created platform at: " << x << ", " << y << std::endl;
 }
 
 Platform::~Platform()
