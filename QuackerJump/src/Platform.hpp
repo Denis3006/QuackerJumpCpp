@@ -1,4 +1,5 @@
 #pragma once
+#include "Player.hpp"
 
 #define PLATFORM_SPEED 3
 
@@ -11,10 +12,12 @@ private:
 public:
 	PlatformType type;
 	int x, y;
-	static const int width = 200;
-	static const int height = 20;
+	bool player_on_platform(const Player& player) const;
+	static const int WIDTH = 200;
+	static const int HEIGHT = 20;
 	int speed;
 	Platform(int x, int y);
 	~Platform();
+	bool operator==(const Platform& other) const;
 };
 

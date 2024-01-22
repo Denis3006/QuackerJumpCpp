@@ -4,10 +4,10 @@
 #include "Player.hpp"
 #include "Platform.hpp"
 #include <vector>
+#include <iterator>
 
 #define SCREEN_WIDTH 1000
 #define SCREEN_HEIGHT 1300
-#define PLAYER_SIZE 100
 
 
 class Game
@@ -23,15 +23,21 @@ private:
 	bool moving_right = false;
 	bool moving_left = false;
 	sf::RenderWindow window;
-	const int frames_per_jump = 50;
+	const int FRAMES_PER_JUMP = 50;
+	const int DEFAULT_JUMPING_SPEED = 8;
+	const int DEFAULT_JUMPING_HEIGHT = DEFAULT_JUMPING_SPEED * FRAMES_PER_JUMP;
 	int jump_frames_left;
 	int jumping_speed;
-	int platform_speed = PLATFORM_SPEED;
+	int score;
 	Player player;
 	std::vector<Platform> platforms;
-	void move_platforms(int dy);
-	void create_random_platforms(int n_platforms, int x_min, int x_max, int y_min, int y_max);
-	bool on_platform();
-	const int gravity = 2;
+	bool new_platforms_needed() const;
+	void handle_moving_platforms();
+	void scroll_platforms(int dy);
+	void create_random_platform();
+	const Platform* player_on_platform() const;
+	void delete_platform(const Platform* platform);
+	int jumping_height() const;
+	const int GRAVITY = 8;
 };
 

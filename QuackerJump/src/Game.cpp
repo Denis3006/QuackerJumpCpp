@@ -4,24 +4,29 @@
 #include <random>
 #include <iostream>
 
-Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), jumping_speed(5)
+Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"), 
+			   jumping_speed(DEFAULT_JUMPING_SPEED), 
+			   player(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 3 * Player::SIZE),
+			   score(0)
 {
 	window.setFramerateLimit(60);
-	create_random_platforms(5, 0, SCREEN_WIDTH - Platform::width, 0, SCREEN_HEIGHT - Platform::height);
+	while (new_platforms_needed()) {
+		create_random_platform();
+	}
 }
 
 void Game::draw_game()
 {
 	window.clear(sf::Color::Black);
 	// draw player
-	sf::RectangleShape player_model(sf::Vector2f(PLAYER_SIZE, PLAYER_SIZE));
+	sf::RectangleShape player_model(sf::Vector2f(Player::SIZE, Player::SIZE));
 	player_model.setFillColor(sf::Color::Magenta);
 	player_model.setPosition(player.get_x(), player.get_y());
 	window.draw(player_model);
 	
 	// draw platforms
 	for (const auto& platform : platforms) {
-		sf::RectangleShape plaftorm_model(sf::Vector2f(platform.width, platform.height));
+		sf::RectangleShape plaftorm_model(sf::Vector2f(platform.WIDTH, platform.HEIGHT));
 		switch (platform.type) {
 		case PlatformType::DEFAULT:
 			plaftorm_model.setFillColor(sf::Color::Red);
@@ -65,7 +70,8 @@ void Game::get_user_input()
 				moving_right = true;
 			}
 			if (event.key.code == sf::Keyboard::Space) {
-				jump_frames_left = frames_per_jump;
+				jump_frames_left = FRAMES_PER_JUMP;
+				jumping_speed = 3 * DEFAULT_JUMPING_SPEED;
 			}
 		}
 		if (event.type == sf::Event::KeyReleased) {
@@ -83,70 +89,116 @@ void Game::update_game_state()
 {
 	bool moving_sideways = (moving_left != moving_right);
 	int dx = 0;
-	int dy = 10;
+	int dy = 0;
+
+	auto player_platform = player_on_platform();
+
 	if (moving_sideways) {
 		dx = moving_right ? 10 : -10;
 	}
-	if (jump_frames_left > 0) {
+	if (jump_frames_left > 0) {  // currently jumping
 		jump_frames_left--;
 		dy = -jumping_speed;
-		move_platforms(jumping_speed);
 	}
-	else if (!on_platform()) {
-		dy = gravity;
-		move_platforms(0);
+	else if (player_platform != nullptr) {  // on platform and not already jumping - start the jump
+		jump_frames_left = FRAMES_PER_JUMP;
+		if (player_platform->type == PlatformType::SLOWING) {
+			jumping_speed = DEFAULT_JUMPING_SPEED / 2;
+		}
+		else {
+			jumping_speed = DEFAULT_JUMPING_SPEED;
+		}
+		if (player_platform->type == PlatformType::FRAGILE) {
+			delete_platform(player_platform);
+		}
+		score += jumping_height();
+		std::cout << "NEW SCORE: " << score << std::endl;
 	}
-	else {
-		jump_frames_left = frames_per_jump;
-		create_random_platforms(2, 0, SCREEN_WIDTH - Platform::width, -frames_per_jump * jumping_speed, 0);
-		move_platforms(0);
+	else { // not on platform and not jumping - fall
+		dy = GRAVITY;
+	}
+
+	if (player.get_y() < int(SCREEN_HEIGHT / 2)) {
+		scroll_platforms(jumping_speed);
+		player.move(0, jumping_speed);
+	}
+	handle_moving_platforms();
+	while (new_platforms_needed()) {
+		create_random_platform();
 	}
 	player.move(dx, dy);
 }
 
-bool Game::on_platform()
+const Platform* Game::player_on_platform() const
 {
 	for (const auto& platform : platforms) {
-		if (platform.x <= player.get_x() + PLAYER_SIZE && 
-			player.get_x() <= platform.x + platform.width && 
-			platform.y <= player.get_y() + PLAYER_SIZE && 
-			player.get_y() + PLAYER_SIZE <= platform.y + platform.height) {
-			return true;
+		if (platform.player_on_platform(player)) {
+			return &platform;
 		}
 	}
-	return false;
+	return nullptr;
 }
 
-void Game::move_platforms(int dy) {
-	int n_platforms_removed = 0;
+void Game::delete_platform(const Platform* platform)
+{
+	platforms.erase(std::remove_if(platforms.begin(), platforms.end(),
+		[platform](Platform p) { return p == *platform; }), platforms.end());
+
+}
+
+int Game::jumping_height() const
+{
+	return jumping_speed * FRAMES_PER_JUMP;
+}
+
+bool Game::new_platforms_needed() const
+{
+	if (platforms.empty()) {
+		return true;
+	}
+	else {
+		return platforms.back().y > 0;
+	}
+}
+
+void Game::handle_moving_platforms() {
 	for (int i = 0; i < platforms.size(); i++) {
-		platforms[i].y += dy;
 		if (platforms[i].type == PlatformType::MOVING) {
-			if (platforms[i].x + platforms[i].speed + Platform::width > SCREEN_WIDTH || platforms[i].x + platforms[i].speed < 0) {
+			if (platforms[i].x + platforms[i].speed + Platform::WIDTH > SCREEN_WIDTH ||
+				platforms[i].x + platforms[i].speed < 0) {
 				platforms[i].speed *= -1;
 			}
 			platforms[i].x += platforms[i].speed;
 		}
-		if (platforms[i].y > SCREEN_HEIGHT) {  // platform is outside the screen -> erase
-			std::cout << platforms[i].y << std::endl;
-			n_platforms_removed++;
-		}
 	}
-	platforms.erase(std::remove_if(platforms.begin(),
-		platforms.end(),
-		[](Platform platform) { return platform.y > SCREEN_HEIGHT; }), platforms.end());
-
 }
 
-void Game::create_random_platforms(int n_platforms, int x_min, int x_max, int y_min, int y_max)
+void Game::scroll_platforms(int dy)
 {
+	for (int i = 0; i < platforms.size(); i++) {
+		platforms[i].y += dy;
+	}
+	platforms.erase(std::remove_if(platforms.begin(), platforms.end(),
+		[](Platform platform) { return platform.y > SCREEN_HEIGHT; }), platforms.end());
+}
+
+
+void Game::create_random_platform()
+{
+	int y_start = SCREEN_HEIGHT;
+	int y_end = y_start - DEFAULT_JUMPING_HEIGHT;
+	if (!platforms.empty()) {
+		y_start = platforms.back().y - 2 * Platform::HEIGHT;
+		int max_distance = DEFAULT_JUMPING_HEIGHT;
+		if (platforms.back().type == PlatformType::SLOWING) {
+			max_distance = DEFAULT_JUMPING_HEIGHT / 2;
+		}
+		y_end = platforms.back().y - max_distance;
+	}
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> x_distr(x_min, x_max);
-	std::uniform_int_distribution<> y_distr(y_min, y_max);
+	std::uniform_int_distribution<> x_distr(0, SCREEN_WIDTH - Platform::WIDTH);
+	std::uniform_int_distribution<> y_distr(y_end, y_start);
 
-	std::cout << "Creating random platforms: " << x_min << ", " << x_max << "; " << y_min << ", " << y_max << std::endl;
-	for (int i = 0; i < n_platforms; i++) {		
-		platforms.push_back(Platform(x_distr(gen), y_distr(gen)));
-	}
+	platforms.push_back(Platform(x_distr(gen), y_distr(gen)));
 }

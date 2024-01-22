@@ -1,6 +1,10 @@
 #include "Player.hpp"
 
-Player::Player() : x(0), y(0)
+Player::Player() : Player(0, 0)
+{
+}
+
+Player::Player(int starting_x, int starting_y) : x(starting_x), y(starting_y), active_buff(Buff::NO_BUFF)
 {
 
 }
