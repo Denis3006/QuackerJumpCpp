@@ -1,6 +1,7 @@
 #include "Game.hpp"
-#include <SFML/Window/Event.hpp>
+#include "SFML/Window/Event.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/Graphics/Text.hpp"
 #include <random>
 #include <iostream>
 
@@ -9,6 +10,10 @@ Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"
 			   player(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 3 * Player::SIZE),
 			   score(0)
 {
+	if (!font.loadFromFile("Arial.ttf"))
+	{
+		std::cout << "Error loading font" << std::endl;
+	}
 	window.setFramerateLimit(60);
 	while (new_platforms_needed()) {
 		create_random_platform();
@@ -18,6 +23,14 @@ Game::Game() : window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Quacker Jump"
 void Game::draw_game()
 {
 	window.clear(sf::Color::Black);
+	sf::Text text;
+
+	text.setFont(font); // font is a sf::Font
+	text.setString("Score: " + std::to_string(score));
+	text.setCharacterSize(24); // in pixels, not points!
+	text.setFillColor(sf::Color::Red);
+	text.setStyle(sf::Text::Bold);
+	window.draw(text);
 	// draw player
 	sf::RectangleShape player_model(sf::Vector2f(Player::SIZE, Player::SIZE));
 	player_model.setFillColor(sf::Color::Magenta);
@@ -111,8 +124,7 @@ void Game::update_game_state()
 		if (player_platform->type == PlatformType::FRAGILE) {
 			delete_platform(player_platform);
 		}
-		score += jumping_height();
-		std::cout << "NEW SCORE: " << score << std::endl;
+		score += jumping_height() / 10;
 	}
 	else { // not on platform and not jumping - fall
 		dy = GRAVITY;

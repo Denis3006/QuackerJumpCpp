@@ -1,6 +1,7 @@
 #pragma once
 #include "SFML/Graphics/RenderWindow.hpp"
-#include <SFML/Window/Event.hpp>
+#include "SFML/Window/Event.hpp"
+#include "SFML/Graphics/Font.hpp"
 #include "Player.hpp"
 #include "Platform.hpp"
 #include <vector>
@@ -23,6 +24,7 @@ private:
 	bool moving_right = false;
 	bool moving_left = false;
 	sf::RenderWindow window;
+	sf::Font font;
 	const int FRAMES_PER_JUMP = 50;
 	const int DEFAULT_JUMPING_SPEED = 8;
 	const int DEFAULT_JUMPING_HEIGHT = DEFAULT_JUMPING_SPEED * FRAMES_PER_JUMP;
