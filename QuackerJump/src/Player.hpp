@@ -15,7 +15,9 @@ public:
 	Player(int starting_x, int starting_y);
 	void move(int dx,int dy);
 	void set_buff(Buff new_buff);
-	int get_x() const;
-	int get_y() const;
+	int left_border() const;
+	int right_border() const;
+	int top_border() const;
+	int bottom_border() const;
 };
 

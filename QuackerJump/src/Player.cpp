@@ -20,14 +20,25 @@ void Player::set_buff(Buff new_buff)
 	active_buff = new_buff;
 }
 
-int Player::get_x() const
+int Player::left_border() const
 {
 	return x;
 }
 
-int Player::get_y() const
+
+int Player::right_border() const
+{
+	return left_border() + Player::SIZE;
+}
+
+int Player::top_border() const
 {
 	return y;
+}
+
+int Player::bottom_border() const
+{
+	return top_border() + Player::SIZE;
 }
 
 

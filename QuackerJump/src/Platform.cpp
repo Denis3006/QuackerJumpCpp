@@ -30,12 +30,13 @@ PlatformType Platform::random_type()
     return PlatformType::DEFAULT;
 }
 
-bool Platform::player_on_platform(const Player& player) const
+bool Platform::player_on_platform(const Player& player, double player_speed) const
 {
-    return (x <= player.get_x() + Player::SIZE &&
-        player.get_x() <= x + WIDTH &&
-        y <= player.get_y() + Player::SIZE &&
-        player.get_y() + Player::SIZE <= y + HEIGHT);
+    bool horisontal_intersection = left_border() <= player.right_border() && player.left_border() <= right_border();
+    bool vertical_intersection = top_border() <= player.bottom_border() && player.bottom_border() <= bottom_border();
+    bool vertical_intesection_between_frames = player.bottom_border() < top_border() && top_border() < player.bottom_border() - player_speed;
+
+    return horisontal_intersection && (vertical_intersection || vertical_intesection_between_frames);
 }
 
 Platform::Platform(int x, int y) : x(x), y(y), type(random_type())
@@ -52,4 +53,36 @@ Platform::~Platform()
 bool Platform::operator==(const Platform& other) const
 {
     return (x == other.x && y == other.y && type == other.type);
+}
+
+PlatformType Platform::get_type() const
+{
+    return type;
+}
+
+int Platform::left_border() const
+{
+    return x;
+}
+
+int Platform::right_border() const
+{
+    return left_border() + WIDTH;
+}
+
+
+int Platform::top_border() const
+{
+    return y;
+}
+
+int Platform::bottom_border() const
+{
+    return top_border() + HEIGHT;
+}
+
+void Platform::move(int dx, int dy)
+{
+    x += dx;
+    y += dy;
 }
