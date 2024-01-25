@@ -41,8 +41,13 @@ bool Platform::player_on_platform(const Player& player, double player_speed) con
 
 Platform::Platform(int x, int y) : x(x), y(y), type(random_type())
 {   
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(0, 1);
+    auto rand_number = distr(gen);
+
     if (type == PlatformType::MOVING) {
-        speed = PLATFORM_SPEED;
+        speed = rand_number == 0 ? -PLATFORM_SPEED : PLATFORM_SPEED;
     }
 }
 
@@ -58,6 +63,16 @@ bool Platform::operator==(const Platform& other) const
 PlatformType Platform::get_type() const
 {
     return type;
+}
+
+int Platform::get_speed() const
+{
+    return speed;
+}
+
+void Platform::swap_movement_direction()
+{
+    speed *= -1;
 }
 
 int Platform::left_border() const

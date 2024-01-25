@@ -10,7 +10,7 @@ int main() {
 	rect.setFillColor(sf::Color::Cyan);
 	int pos_x = 0, pos_y = 1000;
 	rect.setPosition(pos_x, pos_y);
-	while (!game.game_over()) {
+	while (game.running()) {
 		game.get_user_input();
 		game.update_game_state();
 		game.draw_game();

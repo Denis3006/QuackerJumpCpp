@@ -9,7 +9,7 @@
 #include <iterator>
 
 #define SCREEN_WIDTH 1000
-#define SCREEN_HEIGHT 1300
+#define SCREEN_HEIGHT 1200
 
 
 class Game
@@ -17,6 +17,7 @@ class Game
 public:
 	Game();
 	void draw_game();
+	bool running();
 	bool game_over();
 	bool poll_event(sf::Event& event);
 	void get_user_input();
@@ -29,12 +30,11 @@ private:
 	const double V_0 = 30;
 	const double V_HORIZONTAL = 10;
 	double GRAVITY = 1.25;
-	double v = V_0 + GRAVITY;
-	double sum = 0;
-	int n = 0;
+	double v = V_0 + GRAVITY; 
 	int score;
 	Player player;
 	std::vector<Platform> platforms;
+
 	bool new_platforms_needed() const;
 	void handle_moving_platforms();
 	void scroll_platforms(int dy);
@@ -44,5 +44,10 @@ private:
 	double jumping_height(double v_0) const;
 	double jumping_distance(double v_0) const;
 	double v0_slowed() const;
+
+
+	// debug variables
+	double sum = 0;
+	int n = 0;
 };
 

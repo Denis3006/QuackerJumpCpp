@@ -25,10 +25,26 @@ void Game::draw_game()
 {
 	window.clear(sf::Color::Black);
 
+	if (game_over()) {
+		// draw game over text
+		sf::Text game_over_text;
+		game_over_text.setFont(score_font);
+		game_over_text.setCharacterSize(120);
+		game_over_text.setFillColor(sf::Color::Cyan);
+		game_over_text.setStyle(sf::Text::Bold);
+		game_over_text.setString("Game Over!");
+		//center text
+		sf::FloatRect textRect = game_over_text.getLocalBounds();
+		game_over_text.setOrigin(textRect.left + textRect.width / 2.0f,
+			textRect.top + textRect.height / 2.0f);
+		game_over_text.setPosition(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+		window.draw(game_over_text);
+	}
+	
 	// draw score text
 	sf::Text score_text;
 	score_text.setFont(score_font);
-	score_text.setCharacterSize(24); // in pixels, not points!
+	score_text.setCharacterSize(24);
 	score_text.setFillColor(sf::Color::Red);
 	score_text.setStyle(sf::Text::Bold);
 	score_text.setString("Score: " + std::to_string(score));
@@ -65,10 +81,13 @@ void Game::draw_game()
 
 bool Game::game_over()
 {
-	return false;
-	//return player.get_x() < 0 || player.get_x() + Player::SIZE > SCREEN_WIDTH || player.get_y() > SCREEN_HEIGHT;
+	return player.top_border() > SCREEN_HEIGHT;
 }
 
+bool Game::running()
+{
+	return window.isOpen();
+}
 
 bool Game::poll_event(sf::Event& event)
 {
@@ -102,44 +121,52 @@ void Game::get_user_input()
 	}
 }
 
-
 void Game::update_game_state()
 {
-	int dx = 0;
-	auto player_platform = player_on_platform();
+	if (!game_over()) {
+		int dx = 0;
+		auto player_platform = player_on_platform();
 
-	if (moving_left != moving_right) {
-		dx = moving_right ? V_HORIZONTAL : -V_HORIZONTAL;
-	}
-	if (player_platform != nullptr && v <= 0) {  // on platform and not already jumping - start the jump
-		v = V_0;
-		sum = 0;
-		n = 0;
-		if (player_platform->get_type() == PlatformType::SLOWING) {
-			v = v0_slowed();
+		if (moving_left != moving_right) {
+			dx = moving_right ? V_HORIZONTAL : -V_HORIZONTAL;
 		}
-		if (player_platform->get_type() == PlatformType::FRAGILE) {
-			delete_platform(player_platform);
+		if (player_platform != nullptr && v <= 0) {  // on platform and not already jumping - start the jump
+			v = V_0;
+			sum = 0;
+			n = 0;
+			if (player_platform->get_type() == PlatformType::SLOWING) {
+				v = v0_slowed();
+			}
+			if (player_platform->get_type() == PlatformType::FRAGILE) {
+				delete_platform(player_platform);
+			}
 		}
-	}
-	else {
-		v -= GRAVITY;
-	}
+		else {
+			v -= GRAVITY;
+		}
 
-	if (player.top_border() < int(SCREEN_HEIGHT / 2)) {
-		double delta = int(SCREEN_HEIGHT / 2) - player.top_border();
-		score += delta / 10;
-		scroll_platforms(delta);
-		player.move(0, delta);
+		if (player.top_border() < int(SCREEN_HEIGHT / 2)) {
+			double delta = int(SCREEN_HEIGHT / 2) - player.top_border();
+			score += delta / 10;
+			scroll_platforms(delta);
+			player.move(0, delta);
+		}
+		// limit player movement to stay inbound 
+		if (player.left_border() + dx < 0) {
+			dx = player.left_border();
+		}
+		if (player.right_border() + dx > SCREEN_WIDTH) {
+			dx = SCREEN_WIDTH - player.right_border();
+		}
+		player.move(dx, int(-v));
+		handle_moving_platforms();
+		while (new_platforms_needed()) {
+			create_random_platform();
+		}
+		sum += v;
+		n++;
+		std::cout << n << ", " << v << ", " << sum << ", " << jumping_height(v) << std::endl;
 	}
-	player.move(dx, int(-v));
-	handle_moving_platforms();
-	while (new_platforms_needed()) {
-		create_random_platform();
-	}
-	sum += v;
-	n++;
-	std::cout << n << ", " << v << ", " << sum << ", " << jumping_height(v) << std::endl;
 }
 
 const Platform* Game::player_on_platform() const
@@ -158,7 +185,6 @@ void Game::delete_platform(const Platform* platform)
 		[platform](Platform p) { return p == *platform; }), platforms.end());
 
 }
-
 
 double Game::jumping_height(double v_0) const
 {
@@ -199,11 +225,11 @@ bool Game::new_platforms_needed() const
 void Game::handle_moving_platforms() {
 	for (int i = 0; i < platforms.size(); i++) {
 		if (platforms[i].get_type() == PlatformType::MOVING) {
-			if (platforms[i].right_border() + platforms[i].speed > SCREEN_WIDTH ||
-				platforms[i].left_border() + platforms[i].speed < 0) {
-				platforms[i].speed *= -1;
+			if (platforms[i].right_border() + platforms[i].get_speed() > SCREEN_WIDTH ||
+				platforms[i].left_border() + platforms[i].get_speed() < 0) {
+				platforms[i].swap_movement_direction();
 			}
-			platforms[i].move(platforms[i].speed, 0);
+			platforms[i].move(platforms[i].get_speed(), 0);
 		}
 	}
 }
@@ -216,7 +242,6 @@ void Game::scroll_platforms(int dy)
 	platforms.erase(std::remove_if(platforms.begin(), platforms.end(),
 		[](Platform platform) { return platform.top_border() > SCREEN_HEIGHT; }), platforms.end());
 }
-
 
 void Game::create_random_platform()
 {
